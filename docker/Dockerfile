@@ -3,7 +3,20 @@
 # Backend base image
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS backend
 
-# Install system dependencies
+RUN printf '%s\n' \
+  '# 默认注释了源码仓库，如有需要可自行取消注释' \
+  'deb http://mirrors.ustc.edu.cn/debian bookworm main contrib non-free non-free-firmware' \
+  '# deb-src http://mirrors.ustc.edu.cn/debian bookworm main contrib non-free non-free-firmware' \
+  'deb http://mirrors.ustc.edu.cn/debian bookworm-updates main contrib non-free non-free-firmware' \
+  '# deb-src http://mirrors.ustc.edu.cn/debian bookworm-updates main contrib non-free non-free-firmware' \
+  '' \
+  '# backports 软件源，请按需启用' \
+  '# deb http://mirrors.ustc.edu.cn/debian bookworm-backports main contrib non-free non-free-firmware' \
+  '# deb-src http://mirrors.ustc.edu.cn/debian bookworm-backports main contrib non-free non-free-firmware' \
+  | tee /etc/apt/sources.list > /dev/null \
+  && apt-get update
+
+
 RUN apt-get update && apt-get install -y \
     awscli \
     s3fs \
@@ -21,6 +34,9 @@ WORKDIR /app
 # Copy project files
 COPY pyproject.toml pdm.lock* ./
 COPY README.md ./
+
+RUN uv add *** --default-index https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 
 # Convert PDM lock to requirements and install with UV
 # This provides compatibility with PDM while using UV's speed
